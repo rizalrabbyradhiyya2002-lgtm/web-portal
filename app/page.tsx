@@ -150,14 +150,14 @@ function Header({
             onClick={() => setActiveDropdown(activeDropdown === "profile" ? null : "profile")}
           >
             <span className="avatar">MT</span>
-            <span className="profile-copy"><strong>Michael Tan</strong><span>IT Operations</span></span>
+            <span className="profile-copy"><strong>HPIO</strong><span>IT Operations</span></span>
             <ChevronDown size={16} className="profile-chevron" />
           </button>
           {activeDropdown === "profile" && (
             <div className="popover profile-popover">
               <div className="profile-popover-user">
                 <span className="avatar avatar-large">MT</span>
-                <div><strong>Michael Tan</strong><span>IT Operations</span></div>
+                <div><strong>HPIO</strong><span>IT Operations</span></div>
               </div>
               <button onClick={() => setNotice("Pengaturan profil akan segera tersedia.")}>Pengaturan profil</button>
               <button onClick={() => setNotice("Silakan hubungi IT Support untuk bantuan akun.")}>Bantuan akun</button>

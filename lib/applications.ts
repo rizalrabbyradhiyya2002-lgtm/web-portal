@@ -58,22 +58,7 @@ export const applications: Application[] = [
     accent: "#1d9a68",
     url: null,
   },
-  {
-    name: "Ticketing (Whoosh)",
-    description: "Sistem ticketing operasional Whoosh.",
-    category: "Operasional",
-    icon: Ticket,
-    accent: "#e49a24",
-    url: null,
-  },
-  {
-    name: "IT Service Desk",
-    description: "Pengajuan, tracking, dan layanan dukungan IT.",
-    category: "IT & Support",
-    icon: Headset,
-    accent: "#328bd2",
-    url: null,
-  },
+
   {
     name: "MRTG Telkom",
     description: "Monitoring traffic jaringan Telkom.",
