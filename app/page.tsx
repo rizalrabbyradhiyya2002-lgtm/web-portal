@@ -1,436 +1,443 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Image from "next/image";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Bell,
-  BookOpen,
-  ChevronDown,
-  CircleHelp,
-  ExternalLink,
   Grid2X2,
-  Home,
-  LayoutGrid,
+  Info,
+  Layers,
   List,
-  Menu,
   Search,
   X,
 } from "lucide-react";
-import type { Application } from "@/lib/applications";
-import { applicationCategories, applications } from "@/lib/applications";
+import { ApplicationCard } from "@/components/ApplicationCard";
+import { CategoryFilter } from "@/components/CategoryFilter";
+import { DocumentationModal } from "@/components/DocumentationModal";
+import { Footer } from "@/components/Footer";
+import { Header } from "@/components/Header";
+import { HeroBanner } from "@/components/HeroBanner";
+import { MrtgModal } from "@/components/MrtgModal";
+import { RosterCnjoModal } from "@/components/RosterCnjoModal";
+import { NavItem, Sidebar } from "@/components/Sidebar";
+import { SupportModal } from "@/components/SupportModal";
+import type { CategoryFilterType } from "@/lib/applications";
+import { applications } from "@/lib/applications";
+import { useLanguage } from "@/context/LanguageContext";
+import { translations } from "@/lib/translations";
 
-type ViewMode = "grid" | "list";
-type NavigationItem = "Home" | "Aplikasi" | "Dokumentasi" | "Bantuan";
-
-const navigationItems: { label: NavigationItem; icon: typeof Home }[] = [
-  { label: "Home", icon: Home },
-  { label: "Aplikasi", icon: LayoutGrid },
-  { label: "Dokumentasi", icon: BookOpen },
-  { label: "Bantuan", icon: CircleHelp },
-];
-
-function Brand({ compact = false }: { compact?: boolean }) {
-  return (
-    <div className={`brand ${compact ? "brand-compact" : ""}`}>
-      <span className="brand-mark" aria-hidden="true">
-        <span />
-      </span>
-      <span className="brand-name">{compact ? "HPIO Web Portal" : "HPIO"}</span>
-    </div>
-  );
-}
-
-function Sidebar({
-  activeItem,
-  onNavigate,
-  open,
-  onClose,
-}: {
-  activeItem: NavigationItem;
-  onNavigate: (item: NavigationItem) => void;
-  open: boolean;
-  onClose: () => void;
-}) {
-  return (
-    <>
-      {open && <button className="sidebar-backdrop" onClick={onClose} aria-label="Tutup menu" />}
-      <aside className={`sidebar ${open ? "sidebar-open" : ""}`}>
-        <div className="sidebar-brand">
-          <Brand />
-          <button className="mobile-close" onClick={onClose} aria-label="Tutup menu">
-            <X size={20} />
-          </button>
-        </div>
-        <div className="sidebar-label">MENU UTAMA</div>
-        <nav className="side-nav" aria-label="Navigasi utama">
-          {navigationItems.map(({ label, icon: Icon }) => (
-            <button
-              key={label}
-              className={`nav-item ${activeItem === label ? "nav-item-active" : ""}`}
-              onClick={() => {
-                onNavigate(label);
-                onClose();
-              }}
-            >
-              <Icon size={19} strokeWidth={1.8} />
-              <span>{label}</span>
-              {label === "Aplikasi" && <span className="nav-count">{applications.length}</span>}
-            </button>
-          ))}
-        </nav>
-        <div className="sidebar-bottom">
-          <button
-            className="sidebar-help"
-            type="button"
-            onClick={() => {
-              onNavigate("Bantuan");
-              onClose();
-            }}
-          >
-            <div className="help-icon"><CircleHelp size={17} /></div>
-            <div>
-              <strong>Butuh bantuan?</strong>
-              <span>Hubungi IT Support</span>
-            </div>
-            <ExternalLink size={14} className="help-external" />
-          </button>
-          <div className="sidebar-version">IT Operations Portal <span>v1.0</span></div>
-        </div>
-      </aside>
-    </>
-  );
-}
-
-function Header({
-  onMenu,
-  activeDropdown,
-  setActiveDropdown,
-}: {
-  onMenu: () => void;
-  activeDropdown: "profile" | "notifications" | null;
-  setActiveDropdown: (value: "profile" | "notifications" | null) => void;
-}) {
-  const [notice, setNotice] = useState("");
-
-  return (
-    <header className="topbar">
-      <div className="topbar-left">
-        <button className="mobile-menu" onClick={onMenu} aria-label="Buka menu">
-          <Menu size={21} />
-        </button>
-        <div className="breadcrumb"><span>Portal</span><span className="breadcrumb-divider">/</span><strong>Home</strong></div>
-      </div>
-      <div className="topbar-actions">
-        <div className="action-wrap">
-          <button
-            className={`icon-button notification-button ${activeDropdown === "notifications" ? "icon-button-active" : ""}`}
-            aria-label="Notifikasi"
-            aria-expanded={activeDropdown === "notifications"}
-            onClick={() => setActiveDropdown(activeDropdown === "notifications" ? null : "notifications")}
-          >
-            <Bell size={19} strokeWidth={1.8} />
-            <span className="notification-dot" />
-          </button>
-          {activeDropdown === "notifications" && (
-            <div className="popover notification-popover">
-              <div className="popover-heading"><strong>Notifikasi</strong><span>Terbaru</span></div>
-              <div className="notification-empty">
-                <span className="notification-empty-icon"><Bell size={19} /></span>
-                <strong>Semua sudah diperbarui</strong>
-                <span>Belum ada notifikasi baru.</span>
-              </div>
-            </div>
-          )}
-        </div>
-        <span className="topbar-separator" />
-        <div className="action-wrap">
-          <button
-            className={`profile-button ${activeDropdown === "profile" ? "profile-button-active" : ""}`}
-            aria-expanded={activeDropdown === "profile"}
-            onClick={() => setActiveDropdown(activeDropdown === "profile" ? null : "profile")}
-          >
-            <span className="avatar">MT</span>
-            <span className="profile-copy"><strong>HPIO</strong><span>IT Operations</span></span>
-            <ChevronDown size={16} className="profile-chevron" />
-          </button>
-          {activeDropdown === "profile" && (
-            <div className="popover profile-popover">
-              <div className="profile-popover-user">
-                <span className="avatar avatar-large">MT</span>
-                <div><strong>HPIO</strong><span>IT Operations</span></div>
-              </div>
-              <button onClick={() => setNotice("Pengaturan profil akan segera tersedia.")}>Pengaturan profil</button>
-              <button onClick={() => setNotice("Silakan hubungi IT Support untuk bantuan akun.")}>Bantuan akun</button>
-              {notice && <span className="profile-notice" role="status">{notice}</span>}
-            </div>
-          )}
-        </div>
-      </div>
-    </header>
-  );
-}
-
-function HeroSection({
-  query,
-  onQueryChange,
-}: {
-  query: string;
-  onQueryChange: (value: string) => void;
-}) {
-  return (
-    <section className="hero">
-      <div className="hero-copy">
-        <div className="eyebrow"><span className="eyebrow-line" /> PORTAL TERPADU HPIO</div>
-        <h1>HPIO <span>Web Portal</span></h1>
-        <p>Akses cepat ke seluruh aplikasi dan layanan IT HPIO</p>
-        <label className="search-box">
-          <Search size={19} strokeWidth={2} />
-          <input
-            aria-label="Cari aplikasi"
-            placeholder="Cari aplikasi..."
-            value={query}
-            onChange={(event) => onQueryChange(event.target.value)}
-          />
-          {query && (
-            <button type="button" className="clear-search" onClick={() => onQueryChange("")} aria-label="Hapus pencarian">
-              <X size={16} />
-            </button>
-          )}
-        </label>
-      </div>
-      <div className="hero-visual" aria-hidden="true">
-        <div className="hero-orbit orbit-one" />
-        <div className="hero-orbit orbit-two" />
-        <div className="hero-city city-one"><i /><i /><i /><i /></div>
-        <div className="hero-city city-two"><i /><i /><i /></div>
-        <div className="hero-track track-back" />
-        <div className="hero-track track-front" />
-        <div className="hero-train">
-          <div className="train-window train-window-one" />
-          <div className="train-window train-window-two" />
-          <div className="train-window train-window-three" />
-          <div className="train-window train-window-four" />
-          <div className="train-red-line" />
-          <div className="train-nose-window" />
-          <div className="train-wheel wheel-one" />
-          <div className="train-wheel wheel-two" />
-          <div className="train-wheel wheel-three" />
-        </div>
-        <div className="hero-spark spark-one" />
-        <div className="hero-spark spark-two" />
-        <div className="hero-spark spark-three" />
-      </div>
-      <div className="hero-bottom-line" />
-    </section>
-  );
-}
-
-function CategoryFilter({
-  selected,
-  onSelect,
-}: {
-  selected: (typeof applicationCategories)[number];
-  onSelect: (category: (typeof applicationCategories)[number]) => void;
-}) {
-  return (
-    <div className="category-list" role="group" aria-label="Filter kategori aplikasi">
-      {applicationCategories.map((category) => (
-        <button
-          key={category}
-          className={`category-pill ${selected === category ? "category-pill-active" : ""}`}
-          onClick={() => onSelect(category)}
-          aria-pressed={selected === category}
-        >
-          {category}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function ApplicationCard({ application, list = false }: { application: Application; list?: boolean }) {
-  const Icon = application.icon;
-  const url = application.url;
-  const available = url !== null;
-  const cardContent = (
-    <>
-      <span className="app-icon" style={{ "--app-accent": application.accent } as React.CSSProperties}>
-        <Icon size={21} strokeWidth={1.8} />
-      </span>
-      <span className="app-copy">
-        <span className="app-title">{application.name}</span>
-        <span className="app-description">{application.description}</span>
-      </span>
-      <span className={`app-status ${available ? "app-status-ready" : ""}`}>
-        <span className="status-dot" />{available ? "Tersedia" : "Coming Soon"}
-      </span>
-      <span className="app-arrow" aria-hidden="true">
-        {available ? <ExternalLink size={17} /> : <span className="arrow-soon">↗</span>}
-      </span>
-      <span className="card-accent" style={{ "--app-accent": application.accent } as React.CSSProperties} />
-    </>
-  );
-
-  if (!available) {
-    return (
-      <div
-        className={`application-card ${list ? "application-card-list" : ""} application-card-disabled`}
-        aria-label={`${application.name}, Coming Soon`}
-        aria-disabled="true"
-      >
-        {cardContent}
-      </div>
-    );
-  }
-
-  return (
-    <a
-      className={`application-card ${list ? "application-card-list" : ""}`}
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={`Buka ${application.name} di tab baru`}
-    >
-      {cardContent}
-    </a>
-  );
-}
-
-function ApplicationSection({
-  query,
-  category,
-  onCategoryChange,
-  view,
-  onViewChange,
-}: {
-  query: string;
-  category: (typeof applicationCategories)[number];
-  onCategoryChange: (category: (typeof applicationCategories)[number]) => void;
-  view: ViewMode;
-  onViewChange: (view: ViewMode) => void;
-}) {
-  const filteredApplications = useMemo(() => {
-    const normalizedQuery = query.trim().toLocaleLowerCase("id");
-    return applications.filter((application) => {
-      const matchesCategory = category === "Semua" || application.category === category;
-      const matchesQuery =
-        !normalizedQuery ||
-        `${application.name} ${application.description} ${application.category}`
-          .toLocaleLowerCase("id")
-          .includes(normalizedQuery);
-      return matchesCategory && matchesQuery;
-    });
-  }, [category, query]);
-
-  return (
-    <section className="applications-section" id="applications">
-      <div className="section-heading">
-        <div>
-          <div className="section-overline">TEMUKAN YANG ANDA BUTUHKAN</div>
-          <h2>Daftar Aplikasi <span className="result-count">{filteredApplications.length}</span></h2>
-        </div>
-        <div className="view-toggle" role="group" aria-label="Tampilan aplikasi">
-          <button
-            className={view === "grid" ? "view-button view-button-active" : "view-button"}
-            onClick={() => onViewChange("grid")}
-            aria-label="Tampilan grid"
-            aria-pressed={view === "grid"}
-          ><Grid2X2 size={17} /></button>
-          <button
-            className={view === "list" ? "view-button view-button-active" : "view-button"}
-            onClick={() => onViewChange("list")}
-            aria-label="Tampilan list"
-            aria-pressed={view === "list"}
-          ><List size={19} /></button>
-        </div>
-      </div>
-      <div className="filter-row">
-        <CategoryFilter selected={category} onSelect={onCategoryChange} />
-        <span className="apps-note"><span className="note-dot" /> {applications.length} aplikasi terdaftar</span>
-      </div>
-      {filteredApplications.length > 0 ? (
-        <div className={`application-grid ${view === "list" ? "application-list" : ""}`}>
-          {filteredApplications.map((application) => (
-            <ApplicationCard key={application.name} application={application} list={view === "list"} />
-          ))}
-        </div>
-      ) : (
-        <div className="empty-state">
-          <span className="empty-icon"><Search size={23} /></span>
-          <strong>Aplikasi tidak ditemukan</strong>
-          <span>Coba kata kunci lain atau ubah filter kategori Anda.</span>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function Footer() {
-  return (
-    <footer className="footer">
-      <div className="footer-brand">
-        <Image className="footer-logo" src="/img/logo-hpio.jpeg" alt="HPIO" width={96} height={35} />
-        <span className="footer-brand-label">Web Portal</span>
-      </div>
-      <div className="footer-center">IT Operations Portal <span /> HPIO</div>
-      <div className="service-status"><span className="service-dot" /> Layanan Online</div>
-    </footer>
-  );
-}
+const appKeyMap: Record<string, keyof typeof translations.id.apps> = {
+  inspection: "inspection",
+  "roster-rangers": "rosterRangers",
+  "roster-cnjo": "rosterCnjo",
+  "asset-management": "assetManagement",
+  mrtg: "mrtg",
+  dokumentasi: "dokumentasi",
+};
 
 export default function HomePage() {
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<(typeof applicationCategories)[number]>("Semua");
-  const [view, setView] = useState<ViewMode>("grid");
-  const [activeItem, setActiveItem] = useState<NavigationItem>("Home");
+  const { t } = useLanguage();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] =
+    useState<CategoryFilterType>("Semua");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [activeNavItem, setActiveNavItem] = useState<NavItem>("Beranda");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState<"profile" | "notifications" | null>(null);
+
+  // Modals state
+  const [mrtgModalOpen, setMrtgModalOpen] = useState(false);
+  const [rosterCnjoModalOpen, setRosterCnjoModalOpen] = useState(false);
+  const [supportModalOpen, setSupportModalOpen] = useState(false);
+  const [documentationModalOpen, setDocumentationModalOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync saved viewMode on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("hpio_view_mode");
+      if (saved === "grid" || saved === "list") {
+        requestAnimationFrame(() => {
+          setViewMode((prev) => (prev !== saved ? (saved as "grid" | "list") : prev));
+        });
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, []);
+
+  const handleViewModeChange = (mode: "grid" | "list") => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem("hpio_view_mode", mode);
+    } catch {
+      // Ignore
+    }
+  };
+
+  // Toast auto-dismiss
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timer = setTimeout(() => setToastMessage(null), 3500);
+    return () => clearTimeout(timer);
+  }, [toastMessage]);
+
+  // Global Ctrl+K / Cmd+K listener
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Dynamic category counts derived from applications
+  const categoryCounts = useMemo(() => {
+    const counts: Record<CategoryFilterType, number> = {
+      Semua: applications.length,
+      Operasional: 0,
+      "IT & Support": 0,
+      Monitoring: 0,
+      Manajemen: 0,
+    };
+    for (const app of applications) {
+      if (counts[app.category] !== undefined) {
+        counts[app.category] += 1;
+      }
+    }
+    return counts;
+  }, []);
+
+  // Filtered applications based on category and search query (supporting both ID & EN queries)
+  const filteredApplications = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+
+    return applications.filter((app) => {
+      const matchesCategory =
+        selectedCategory === "Semua" || app.category === selectedCategory;
+
+      if (!matchesCategory) return false;
+      if (!q) return true;
+
+      const appKey = appKeyMap[app.id];
+      const transEn = appKey ? translations.en.apps[appKey] : null;
+      const transId = appKey ? translations.id.apps[appKey] : null;
+
+      const nameMatch =
+        app.name.toLowerCase().includes(q) ||
+        (transEn && transEn.name.toLowerCase().includes(q)) ||
+        (transId && transId.name.toLowerCase().includes(q));
+
+      const descMatch =
+        app.description.toLowerCase().includes(q) ||
+        (transEn && transEn.description.toLowerCase().includes(q)) ||
+        (transId && transId.description.toLowerCase().includes(q));
+
+      const catMatch = app.category.toLowerCase().includes(q);
+
+      const childrenMatch = app.children?.some(
+        (child) =>
+          child.name.toLowerCase().includes(q) ||
+          child.description.toLowerCase().includes(q)
+      );
+
+      return nameMatch || descMatch || catMatch || Boolean(childrenMatch);
+    });
+  }, [searchQuery, selectedCategory]);
+
+  const mrtgApp = useMemo(
+    () => applications.find((app) => app.id === "mrtg"),
+    []
+  );
+
+  const handleComingSoon = (appName: string) => {
+    if (
+      appName.toLowerCase().includes("dokumentasi") ||
+      appName.toLowerCase().includes("documentation")
+    ) {
+      setDocumentationModalOpen(true);
+    } else {
+      setToastMessage(t("toastComingSoon").replace("{name}", appName));
+    }
+  };
+
+  const handleNavigation = (item: NavItem) => {
+    setActiveNavItem(item);
+    if (item === "Beranda") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else if (item === "Aplikasi") {
+      document
+        .getElementById("daftar-aplikasi")
+        ?.scrollIntoView({ behavior: "smooth" });
+    } else if (item === "Dokumentasi") {
+      setDocumentationModalOpen(true);
+    } else if (item === "Bantuan") {
+      setSupportModalOpen(true);
+    }
+  };
 
   return (
-    <main className="portal-shell" onClick={() => activeDropdown && setActiveDropdown(null)}>
+    <div className="min-h-screen bg-[#F4F7FC] text-[#102448] flex flex-col font-sans">
+      {/* Sidebar Navigation */}
       <Sidebar
-        activeItem={activeItem}
-        onNavigate={(item) => {
-          setActiveItem(item);
-          if (item === "Aplikasi") document.getElementById("applications")?.scrollIntoView({ behavior: "smooth" });
-          if (item === "Home") window.scrollTo({ top: 0, behavior: "smooth" });
-          if (item === "Dokumentasi") {
-            setCategory("Manajemen");
-            document.getElementById("applications")?.scrollIntoView({ behavior: "smooth" });
-          }
-          if (item === "Bantuan") {
-            setCategory("IT & Support");
-            document.getElementById("applications")?.scrollIntoView({ behavior: "smooth" });
-          }
-        }}
+        activeItem={activeNavItem}
+        onNavigate={handleNavigation}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        totalAppsCount={applications.length}
+        onOpenSupport={() => setSupportModalOpen(true)}
       />
-      <div
-        className="main-panel"
-        onClick={(event) => {
-          if (!(event.target instanceof Element) || !event.target.closest(".action-wrap")) {
-            setActiveDropdown(null);
-          }
-        }}
-      >
+
+      {/* Main Layout Area */}
+      <div className="flex flex-col flex-1 lg:pl-[240px] transition-all duration-300">
+        {/* Top Header */}
         <Header
-          onMenu={() => setSidebarOpen(true)}
-          activeDropdown={activeDropdown}
-          setActiveDropdown={setActiveDropdown}
+          onOpenSidebar={() => setSidebarOpen(true)}
+          onOpenSupport={() => setSupportModalOpen(true)}
         />
-        <div className="page-content">
-          <HeroSection query={query} onQueryChange={setQuery} />
-          <ApplicationSection
-            query={query}
-            category={category}
-            onCategoryChange={setCategory}
-            view={view}
-            onViewChange={setView}
-          />
+
+        {/* Content Body */}
+        <main className="flex-1 px-5 sm:px-7 md:px-9 py-6 flex flex-col gap-6 w-full">
+          {/* 1. Hero Banner */}
+          <HeroBanner bannerImage="/img/datacenter-banner.jpg" />
+
+          {/* 2. Compact Information Strip */}
+          <section className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-white border border-[#E2E8F0] px-5 py-3 shadow-2xs">
+            {/* Total Main Applications dynamic counter */}
+            <div className="flex items-center gap-2 text-xs">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-600 shrink-0">
+                <Layers size={14} />
+              </div>
+              <span className="text-[#64748B]">{t("totalSystemLabel")}</span>
+              <span className="font-bold text-[#102448]">
+                {applications.length} {t("totalSystemSuffix")}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs text-[#64748B]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#16A34A]" />
+              <span>{t("portalNotice")}</span>
+            </div>
+          </section>
+
+          {/* 3. Search Bar & Category Filters Toolbar */}
+          <section className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 rounded-2xl bg-white border border-[#E2E8F0] p-4 shadow-2xs">
+            {/* Search Bar */}
+            <div className="flex-1 max-w-lg w-full">
+              <div className="relative flex items-center rounded-xl bg-slate-50 border border-[#E2E8F0] px-3.5 py-2 focus-within:bg-white focus-within:border-[#2563EB] focus-within:ring-2 focus-within:ring-[#2563EB]/10 transition-all">
+                <Search size={16} className="text-slate-400 shrink-0 mr-2.5" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t("searchPlaceholder")}
+                  className="w-full bg-transparent text-xs sm:text-sm font-medium text-[#102448] placeholder:text-[#64748B] focus:outline-none"
+                  aria-label={t("searchPlaceholder")}
+                />
+
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      searchInputRef.current?.focus();
+                    }}
+                    className="p-1 text-slate-400 hover:text-slate-600 transition-colors mr-1"
+                    aria-label={t("clearSearch")}
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Category Filters & View Mode Toggle */}
+            <div className="flex flex-wrap items-center justify-between xl:justify-end gap-3 w-full xl:w-auto">
+              {/* Category Pills */}
+              <CategoryFilter
+                selectedCategory={selectedCategory}
+                onSelectCategory={setSelectedCategory}
+                categoryCounts={categoryCounts}
+              />
+
+              {/* View Switcher Toggle (Grid & List) */}
+              <div
+                className="inline-flex items-center rounded-xl bg-slate-100 p-1 border border-[#E2E8F0] shrink-0"
+                role="group"
+                aria-label="Mode tampilan"
+              >
+                <button
+                  type="button"
+                  onClick={() => handleViewModeChange("grid")}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                    viewMode === "grid"
+                      ? "bg-[#0B1F3A] text-white shadow-xs"
+                      : "text-[#64748B] hover:text-[#102448]"
+                  }`}
+                  aria-pressed={viewMode === "grid"}
+                  aria-label={t("viewGrid")}
+                >
+                  <Grid2X2 size={14} />
+                  <span className="hidden sm:inline">{t("viewGrid")}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleViewModeChange("list")}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                    viewMode === "list"
+                      ? "bg-[#0B1F3A] text-white shadow-xs"
+                      : "text-[#64748B] hover:text-[#102448]"
+                  }`}
+                  aria-pressed={viewMode === "list"}
+                  aria-label={t("viewList")}
+                >
+                  <List size={14} />
+                  <span className="hidden sm:inline">{t("viewList")}</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* 4. Application Directory Section */}
+          <section id="daftar-aplikasi" className="flex flex-col gap-4 scroll-mt-20">
+            {/* Section Heading & Subtitle */}
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 border-b border-slate-200 pb-3">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-[#102448] tracking-tight">
+                  {t("appDirectoryTitle")}
+                </h2>
+                <p className="text-xs sm:text-sm text-[#64748B] mt-0.5">
+                  {t("appDirectorySubtitle")}
+                </p>
+              </div>
+
+              <span className="text-xs font-bold text-[#64748B]">
+                {filteredApplications.length}{" "}
+                {t("appsDisplayed").replace("{total}", String(applications.length))}
+              </span>
+            </div>
+
+            {/* Active search query indicator */}
+            {searchQuery && (
+              <div className="flex items-center justify-between rounded-xl bg-blue-50 px-4 py-2 text-xs text-[#102448] border border-blue-100">
+                <div className="flex items-center gap-2">
+                  <Search size={14} className="text-[#2563EB]" />
+                  <span>
+                    {t("searchResults")} &ldquo;<strong>{searchQuery}</strong>&rdquo; (
+                    {filteredApplications.length} {t("appsFound")})
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="font-bold text-[#2563EB] hover:underline flex items-center gap-1"
+                >
+                  <span>{t("clearFilter")}</span>
+                  <X size={12} />
+                </button>
+              </div>
+            )}
+
+            {/* 3-Column Application Cards Grid on Desktop */}
+            {filteredApplications.length > 0 ? (
+              <div
+                className={
+                  viewMode === "grid"
+                    ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
+                    : "flex flex-col gap-3"
+                }
+              >
+                {filteredApplications.map((app) => (
+                  <ApplicationCard
+                    key={app.id}
+                    application={app}
+                    viewMode={viewMode}
+                    onOpenMrtg={() => setMrtgModalOpen(true)}
+                    onOpenRosterCnjo={() => setRosterCnjoModalOpen(true)}
+                    onComingSoon={handleComingSoon}
+                  />
+                ))}
+              </div>
+            ) : (
+              /* Empty Search State */
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-2xs">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-400 mb-3">
+                  <Search size={24} />
+                </div>
+                <h3 className="text-base font-bold text-[#102448]">
+                  {t("noAppsFound")}
+                </h3>
+                <p className="mt-1 text-xs text-[#64748B] max-w-sm">
+                  {t("noAppsDesc")} &ldquo;{searchQuery}&rdquo;.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSelectedCategory("Semua");
+                  }}
+                  className="mt-4 rounded-xl bg-[#0B1F3A] px-4 py-2 text-xs font-bold text-white hover:bg-[#153765] transition-colors"
+                >
+                  {t("resetFilters")}
+                </button>
+              </div>
+            )}
+          </section>
+
+          {/* 5. Corporate Footer */}
           <Footer />
-        </div>
+        </main>
       </div>
-    </main>
+
+      {/* MRTG Submenu Dialog Modal */}
+      {mrtgApp?.children && (
+        <MrtgModal
+          isOpen={mrtgModalOpen}
+          onClose={() => setMrtgModalOpen(false)}
+          submenus={mrtgApp.children}
+        />
+      )}
+
+      {/* IT Support Contact Modal */}
+      <SupportModal
+        isOpen={supportModalOpen}
+        onClose={() => setSupportModalOpen(false)}
+      />
+
+      {/* Documentation Info Modal */}
+      <DocumentationModal
+        isOpen={documentationModalOpen}
+        onClose={() => setDocumentationModalOpen(false)}
+      />
+
+      {/* Roster CNJO Viewer Modal (reads from /jadwalcnjo) */}
+      <RosterCnjoModal
+        isOpen={rosterCnjoModalOpen}
+        onClose={() => setRosterCnjoModalOpen(false)}
+      />
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl bg-[#07172D] px-4 py-3 text-xs font-semibold text-white shadow-2xl border border-white/10 animate-fade-in max-w-sm"
+        >
+          <Info size={16} className="text-sky-400 shrink-0" />
+          <span>{toastMessage}</span>
+          <button
+            type="button"
+            onClick={() => setToastMessage(null)}
+            className="ml-2 text-slate-400 hover:text-white"
+            aria-label={t("close")}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
